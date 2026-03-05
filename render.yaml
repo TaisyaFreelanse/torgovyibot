@@ -1,3 +1,6 @@
+# Blueprint для деплоя торгового бота на Render (Background Worker)
+# Деплой: Render Dashboard → New → Blueprint → подключить репо
+# Переменные BYBIT_*, TELEGRAM_* — задать вручную (sync: false)
 services:
   - type: worker
     name: torgovyibot
