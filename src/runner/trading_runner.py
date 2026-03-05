@@ -123,18 +123,30 @@ class TradingRunner:
             elif sig == SignalType.LONG_CLOSE and position == "Buy":
                 resp = self.order_manager.close_position_by_signal(symbol, "Long", qty)
                 if resp.get("retCode") == 0:
+                    if entry_price is not None and max_usdt is not None:
+                        self.order_manager.on_position_closed(
+                            symbol, "Long", qty, entry_price, curr_price,
+                        )
                     self.order_manager.convert_to_usdt(symbol)
                     if self.notifier:
                         self.notifier.sync_send_text(f"📉 Close Long {symbol} @ {curr_price}")
             elif sig == SignalType.SHORT_CLOSE and position == "Sell":
                 resp = self.order_manager.close_position_by_signal(symbol, "Short", qty)
                 if resp.get("retCode") == 0:
+                    if entry_price is not None and max_usdt is not None:
+                        self.order_manager.on_position_closed(
+                            symbol, "Short", qty, entry_price, curr_price,
+                        )
                     self.order_manager.convert_to_usdt(symbol)
                     if self.notifier:
                         self.notifier.sync_send_text(f"📈 Close Short {symbol} @ {curr_price}")
             elif sig in (SignalType.TRAILING_STOP_LONG, SignalType.TRAILING_STOP_SHORT):
                 side = "Long" if sig == SignalType.TRAILING_STOP_LONG else "Short"
-                self.order_manager.close_position_trailing(symbol, side, qty, curr_price)
+                resp = self.order_manager.close_position_trailing(symbol, side, qty, curr_price)
+                if resp.get("retCode") == 0 and entry_price is not None and max_usdt is not None:
+                    self.order_manager.on_position_closed(
+                        symbol, side, qty, entry_price, curr_price,
+                    )
                 if self.notifier:
                     self.notifier.sync_send_text(f"🛑 Trailing Stop {side} {symbol} @ {curr_price}")
         except Exception as e:

@@ -154,7 +154,7 @@ async def cmd_config(
         f"  Fast: {strategy.get('fast_mm_period', '?')} | Slow: {strategy.get('slow_mm_period', '?')}",
         f"  Trailing: {strategy.get('trailing_activation_pct', '?')}% / {strategy.get('trailing_stop_pct', '?')}%",
         "<b>Исполнение:</b>",
-        f"  Реинвест: {execution.get('reinvestment_pct', '?')}% | Плечо: {execution.get('leverage', '?')}x",
+        f"  Реінвест прибутку: {execution.get('reinvestment_pct', '?')}% | Плечо: {execution.get('leverage', '?')}x",
         f"  Лимитные: {execution.get('use_limit_orders', '?')}",
     ]
     await update.message.reply_text("\n".join(lines), parse_mode="HTML")

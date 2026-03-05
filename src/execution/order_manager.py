@@ -9,6 +9,7 @@ from typing import Callable, Optional
 
 from src.exchange.bybit_client import BybitClient
 from src.exchange.trading import BybitTrading
+from src.execution.pair_capital import PairCapitalStore
 from src.execution.position_sizer import calc_position_qty, round_qty
 
 
@@ -34,11 +35,13 @@ class OrderManager:
         client: BybitClient,
         params: ExecutionParams,
         on_liquidation_warning: Optional[Callable[[str, float], None]] = None,
+        pair_capital: Optional[PairCapitalStore] = None,
     ) -> None:
         self.client = client
         self.trading = BybitTrading(client)
         self.params = params
         self.on_liquidation_warning = on_liquidation_warning
+        self.pair_capital = pair_capital or PairCapitalStore()
 
     def set_leverage(self, symbol: str, leverage: int) -> dict:
         """Установка плеча перед открытием позиции."""
@@ -66,16 +69,20 @@ class OrderManager:
 
     def calc_qty(self, symbol: str, max_usdt: float | None = None) -> float:
         """Рассчитывает qty для новой позиции.
-        max_usdt: лимит маржи в USDT для этой пары (из config pairs.max_usdt).
+        max_usdt: стартовый капитал на пару. При реинвесте используется grown capital без лимита.
         """
         balance = self.get_balance()
         price = self.trading.get_last_price(symbol)
+        allocated = None
+        if max_usdt is not None:
+            allocated = self.pair_capital.get_allocated(symbol, max_usdt)
         raw_qty = calc_position_qty(
             balance_usdt=balance,
             price=price,
             reinvestment_pct=self.params.reinvestment_pct,
             leverage=self.params.leverage,
-            max_usdt=max_usdt,
+            max_usdt=max_usdt if (allocated is None or allocated <= 0) else None,
+            allocated_capital=allocated if (allocated and allocated > 0) else None,
         )
         return round_qty(raw_qty)
 
@@ -174,6 +181,28 @@ class OrderManager:
             qty=qty,
             order_type="Market",
         )
+
+    def on_position_closed(
+        self,
+        symbol: str,
+        side: str,
+        qty: float,
+        entry_price: float,
+        exit_price: float,
+        reinvestment_pct: float | None = None,
+    ) -> None:
+        """
+        Оновити капітал пари після закриття (для реінвестування).
+        side: Long або Short (напрямок закритої позиції).
+        """
+        if entry_price <= 0 or qty <= 0:
+            return
+        if side.lower() == "long":
+            profit_usdt = (exit_price - entry_price) * qty
+        else:
+            profit_usdt = (entry_price - exit_price) * qty
+        pct = reinvestment_pct if reinvestment_pct is not None else self.params.reinvestment_pct
+        self.pair_capital.on_close(symbol, profit_usdt, pct)
 
     def convert_to_usdt(self, symbol: str) -> dict:
         """

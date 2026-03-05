@@ -11,6 +11,7 @@ def calc_position_qty(
     reinvestment_pct: float = 100,
     leverage: int = 1,
     max_usdt: float | None = None,
+    allocated_capital: float | None = None,
 ) -> float:
     """
     Рассчитывает количество (qty) для открытия позиции.
@@ -18,16 +19,20 @@ def calc_position_qty(
     Args:
         balance_usdt: Доступный баланс в USDT
         price: Текущая цена актива
-        reinvestment_pct: % от баланса (1–100)
+        reinvestment_pct: % от баланса (1–100) — для пар без max_usdt
         leverage: Плечо (1–100)
-        max_usdt: Макс. маржа в USDT для этой пары (если задано — лимит на пару)
+        max_usdt: Стартовый капитал на пару (только для первой сделки)
+        allocated_capital: Текущий выделенный капитал (для реинвеста, без лимита)
 
     Returns:
         Qty в базовой валюте (например, BTC)
     """
-    margin = balance_usdt * (reinvestment_pct / 100)
-    if max_usdt is not None and max_usdt > 0:
-        margin = min(margin, max_usdt)
+    if allocated_capital is not None and allocated_capital > 0:
+        margin = min(allocated_capital, balance_usdt)
+    elif max_usdt is not None and max_usdt > 0:
+        margin = min(max_usdt, balance_usdt)
+    else:
+        margin = balance_usdt * (reinvestment_pct / 100)
     position_value = margin * leverage
     if price <= 0:
         return 0.0
