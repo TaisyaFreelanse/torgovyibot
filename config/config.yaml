@@ -1,0 +1,35 @@
+# Конфигурация торгового бота ZL MACD+HA+Trailing
+
+# Биржа
+exchange:
+  name: bybit
+  testnet: false
+
+# Торговые пары и таймфреймы
+pairs:
+  - symbol: ETHUSDT
+    timeframe: 1h
+    enabled: false
+  - symbol: BTCUSDT
+    timeframe: 1h
+    enabled: false
+
+# Параметры стратегии (Zero Lag MACD + Heiken Ashi)
+strategy:
+  fast_mm_period: 12
+  slow_mm_period: 26
+  signal_mm_period: 9
+  use_ema: true
+  use_glaz_algo: false
+  trailing_activation_pct: 0.1
+  trailing_stop_pct: 0.7
+
+# Параметры исполнения
+execution:
+  reinvestment_pct: 100  # % от баланса для открытия позиций (1-100)
+  leverage: 1            # Плечо (1-100)
+  use_limit_orders: true # Лимитные ордера вместо рыночных
+  convert_to_usdt: true  # Конвертировать в USDT после закрытия сделки
+
+# Комиссия (для расчётов)
+commission_pct: 0.1

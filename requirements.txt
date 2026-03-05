@@ -1,0 +1,16 @@
+# Bybit API
+pybit>=5.6.0
+
+# Telegram bot
+python-telegram-bot>=20.0
+
+# Data processing
+pandas>=2.0.0
+numpy>=1.24.0
+
+# Config and env
+python-dotenv>=1.0.0
+PyYAML>=6.0
+
+# Async HTTP
+aiohttp>=3.9.0
